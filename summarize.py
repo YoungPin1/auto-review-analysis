@@ -12,7 +12,7 @@ def summarize_14_clusters(company_id: int):
     input_path = Path(f"files/{company_id}/filtered_analysis.json")
     output_path = Path(f"files/{company_id}/14_analysis.json")
 
-    model = SentenceTransformer("intfloat/multilingual-e5-large", cache_folder="./e5_model")
+    model = SentenceTransformer("intfloat/multilingual-e5-large", cache_folder="./models/e5_model")
 
     with open(input_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -74,6 +74,3 @@ def summarize_14_clusters(company_id: int):
         json.dump(summary_by_group, f, ensure_ascii=False, indent=2)
 
     return output_path.name
-
-
-summarize_14_clusters(49543885926)
