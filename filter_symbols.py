@@ -7,16 +7,16 @@ import emoji
 
 def clean_text(text: str) -> str:
     text = text.replace("\n", " ").replace("\\n", " ")
-    text = emoji.replace_emoji(text, replace='')  # emoji
-    text = re.sub(r"[!?.,…]{2,}", ".", text)  # !!!, ..., ??? → .
-    text = re.sub(r"[-=*_~]{3,}", "", text)  # мусорные оформления
-    text = re.sub(r'\\+', '', text)  # лишние
-    text = re.sub(r'\\"', '"', text)  # экранированные кавычки
+    text = emoji.replace_emoji(text, replace='')
+    text = re.sub(r"[!?.,…]{2,}", ".", text)
+    text = re.sub(r"[-=*_~]{3,}", "", text)
+    text = re.sub(r'\\+', '', text)
+    text = re.sub(r'\\"', '"', text)
 
     allowed_chars = r"[^а-яА-ЯёЁa-zA-Z0-9,.!?;:()\"'\s\-–«»/%№&/]"
 
-    text = re.sub(allowed_chars, "", text)  # остальное
-    text = re.sub(r"\s{2,}", " ", text)  # двойные пробелы
+    text = re.sub(allowed_chars, "", text)
+    text = re.sub(r"\s{2,}", " ", text)
     return text.strip()
 
 

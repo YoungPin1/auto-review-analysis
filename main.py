@@ -17,6 +17,9 @@ from filter_symbols import clean_review_file
 from label_reviews import label_reviews
 from parser.parse import parse_reviews
 from threshold import filter_labeled_reviews
+from generate_summary_section import save_summary_and_examples
+from render_pdf import render_pdf_from_template
+from summarize import summarize_14_clusters
 
 API_TOKEN = "7540257200:AAHEg889upnDEjL_qTGhp8Y4y6VUsmltTmM"
 
@@ -89,16 +92,34 @@ async def handle_link(message: Message):
 
     try:
         loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, parse_reviews, company_id)
+        company_info = await loop.run_in_executor(None, parse_reviews, company_id)
+
+        progress_msg = await message.answer("Отзывы собраны. Прогресс: 40%")
+
         await loop.run_in_executor(None, clean_review_file, company_id)
         await loop.run_in_executor(None, label_reviews, company_id)
         await loop.run_in_executor(None, filter_labeled_reviews, company_id)
-        await loop.run_in_executor(None, generate_charts, company_id)
+        await loop.run_in_executor(None, summarize_14_clusters, company_id)
 
-        json_path = Path(f"files/{company_id}/filtered_analysis.json")
-        if json_path.exists():
-            file = FSInputFile(json_path)
-            await message.answer_document(file, caption="📎 Вот файл с разметкой отзывов")
+        await progress_msg.edit_text("Отзывы размечены и проанализированы. Прогресс: 80%")
+
+        await loop.run_in_executor(None, generate_charts, company_id)
+        await loop.run_in_executor(None, save_summary_and_examples, company_id)
+        report_path = await loop.run_in_executor(None, render_pdf_from_template, company_id, company_info["name"])
+
+        await progress_msg.delete()
+
+
+        report_path = Path(f"files/{company_id}/report/output.pdf")
+        if report_path.exists():
+            await bot.send_document(
+                chat_id=message.chat.id,
+                document=FSInputFile(report_path),
+                caption="📄 Вот готовый PDF-отчёт по отзывам!"
+            )
+        else:
+            await message.answer("⚠️ Отчёт не найден. Что-то пошло не так при генерации.")
+
     except Exception as e:
         await message.answer(f"Произошла ошибка: {e}")
         await message.answer(f"Пожалуйста, попробуйте другую ссылку и повторите запрос")
