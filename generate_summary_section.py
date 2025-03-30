@@ -62,15 +62,22 @@ def save_summary_and_examples(company_id: int):
             if key not in data:
                 continue
 
-            sentences = data[key]
-            if not sentences:
+            entries = data[key]
+            if not entries:
                 continue
 
             cat_label = CATEGORY_LABELS[category]
             lines.append(f"\\subsubsection*{{2.{i}.{j} {sentiment_label} об {cat_label.lower()}}}")
             lines.append("\\begin{itemize}")
-            for sentence in sentences:
-                lines.append(f"  \\item {escape_latex(sentence)}")
+            for entry in entries:
+                frag = escape_latex(entry["text"])
+                name = escape_latex(entry.get("name", "неизвестно"))
+                date_val = entry.get("date")
+                try:
+                    date_str = datetime.fromtimestamp(date_val).strftime("%d.%m.%Y")
+                except Exception:
+                    date_str = "неизвестно"
+                lines.append(f"  \\item {frag} \\newline \\textit{{Автор: {name}, Дата: {date_str}}}")
             lines.append("\\end{itemize}\n")
 
     summary_output_path.write_text("\n".join(lines), encoding="utf-8")
@@ -89,10 +96,11 @@ def save_summary_and_examples(company_id: int):
         return sum(a.get("confidence", 0) for a in aspects) / len(aspects)
 
     filtered_reviews = [r for r in reviews if len(r.get("review_text", "")) > 350]
-    sorted_reviews = sorted(filtered_reviews, key=avg_confidence, reverse=True)
-    top_reviews = sorted_reviews[:50]
 
-    category_labels = CATEGORY_LABELS
+    # sorted_reviews = sorted(filtered_reviews, key=avg_confidence, reverse=True)
+    # top_reviews = sorted_reviews[:50]
+
+    top_reviews = filtered_reviews[:50]
 
     latex_lines = [
         r"\subsection*{3 Примеры полных отзывов с аннотацией}",
@@ -105,7 +113,6 @@ def save_summary_and_examples(company_id: int):
 
     for idx, review in enumerate(top_reviews, 1):
         text = escape_latex(review["review_text"].replace("\n", " "))
-
         name = escape_latex(review.get("name", "неизвестно"))
         stars = review.get("stars", "?")
         date_val = review.get("date")
@@ -121,7 +128,7 @@ def save_summary_and_examples(company_id: int):
         latex_lines.append(r"\textbf{Аспекты:}")
         latex_lines.append(r"\begin{itemize}")
         for asp in review.get("aspects", []):
-            cat = category_labels.get(asp["category"], asp["category"])
+            cat = CATEGORY_LABELS.get(asp["category"], asp["category"])
             ans = escape_latex(asp["answer"].replace("\n", " "))
             conf_cat = round(asp["confidence"], 1)
             sentiment = asp["sentiment"]
@@ -134,6 +141,6 @@ def save_summary_and_examples(company_id: int):
     latex_lines.append(r"\endgroup")
 
     output_path.write_text("\n".join(latex_lines), encoding="utf-8")
-    print(f"✅ Сохранено: {output_path}")
+    print(f"Сохранено: {output_path}")
 
     return str(summary_output_path), str(output_path)

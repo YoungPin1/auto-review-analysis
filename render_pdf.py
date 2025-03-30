@@ -42,4 +42,3 @@ def render_pdf_from_template(company_id: int, restaurant_name: str = "Назва
         print(f"успешно создан: {output_pdf}")
     except subprocess.CalledProcessError as e:
         print("Ошибка", e)
-

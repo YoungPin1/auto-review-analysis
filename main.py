@@ -20,8 +20,10 @@ from threshold import filter_labeled_reviews
 from generate_summary_section import save_summary_and_examples
 from render_pdf import render_pdf_from_template
 from summarize import summarize_14_clusters
+from json_to_txt import export_annotations_to_txt
 
-API_TOKEN = "7540257200:AAHEg889upnDEjL_qTGhp8Y4y6VUsmltTmM"
+
+API_TOKEN = "TELEGRAM TOKEN HERE"
 
 logging.basicConfig(level=logging.INFO)
 
@@ -44,15 +46,15 @@ async def start_handler(message: Message):
 
     await message.answer(
         "👋 <b>Привет!</b>\n\n"
-        "Я — <b>бот, который умеет анализировать отзывы</b> 🧠\n\n"
+        "Я — <b>бот, который умеет анализировать отзывы</b>\n\n"
         "Могу собрать с Яндекс.Карт отзывы о заведении и показать, что именно пишут гости — что им нравится, а что не очень.\n\n"
-        "📊 В конце я пришлю PDF-отчёт с готовой аналитикой.",
+        "В конце я пришлю PDF-отчёт с готовой аналитикой.",
         reply_markup=keyboard
     )
 
     await message.answer(
         "📍 Пришлите ссылку на <b>ресторан, кафе, кофейню или любое другое заведение общественного питания</b> на Яндекс.Картах.\n"
-        "⚠️ Нужна ссылка в формате:\n"
+        "Нужна ссылка в формате:\n"
         "<code>https://yandex.ru/maps/org/название/id</code>\n\n"
         ""
         "А я подготовлю для вас 📄 <b>анализ отзывов</b> с визуализациями и понятными выводами."
@@ -76,7 +78,7 @@ async def handle_link(message: Message):
             "❌ Не удалось найти ID заведения в ссылке. Убедитесь, что вы отправили корректную ссылку с Яндекс.Карт.\n\n"
             "⚠️ Нужна ссылка в формате:\n"
             "<code>https://yandex.ru/maps/org/название/id</code>\n\n"
-            "📌 Пример:\n"
+            "Пример:\n"
             "<code>https://yandex.ru/maps/org/bro_n/44460425999/</code>"
         )
         processing_state[user_id] = False
@@ -84,8 +86,8 @@ async def handle_link(message: Message):
 
     await message.answer(
         f"✅ Ссылка получена: {text}\n\n"
-        "🔍 Начинаю сбор и анализ отзывов. Это может занять от <b>5 до 15 минут</b>, в зависимости от загрузки системы.\n\n"
-        "📬 Как только всё будет готово, я пришлю вам уведомление!."
+        "Начинаю сбор и анализ отзывов. Это может занять от <b>5 до 15 минут</b>, в зависимости от загрузки системы.\n\n"
+        "Как только всё будет готово, я пришлю вам уведомление!."
     )
 
     company_id = int(match.group(1))
@@ -105,17 +107,24 @@ async def handle_link(message: Message):
 
         await loop.run_in_executor(None, generate_charts, company_id)
         await loop.run_in_executor(None, save_summary_and_examples, company_id)
-        report_path = await loop.run_in_executor(None, render_pdf_from_template, company_id, company_info["name"])
+        await loop.run_in_executor(None, render_pdf_from_template, company_id, company_info["name"])
 
         await progress_msg.delete()
 
-
         report_path = Path(f"files/{company_id}/report/output.pdf")
+        txt_path = await loop.run_in_executor(None, export_annotations_to_txt, company_id)
+        txt_path = Path(txt_path)
+
         if report_path.exists():
             await bot.send_document(
                 chat_id=message.chat.id,
                 document=FSInputFile(report_path),
-                caption="📄 Вот готовый PDF-отчёт по отзывам!"
+                caption="Вот готовый PDF-отчёт по отзывам!"
+            )
+            await bot.send_document(
+                chat_id=message.chat.id,
+                document=FSInputFile(txt_path),
+                caption="Все собранные отзывы с аннотацией в текстовом виде."
             )
         else:
             await message.answer("⚠️ Отчёт не найден. Что-то пошло не так при генерации.")

@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-from razdel import sentenize
 from sentence_transformers import SentenceTransformer
 from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import cosine_similarity
@@ -20,13 +19,21 @@ def summarize_14_clusters(company_id: int):
     category_sentiment_fragments = {}
 
     for item in tqdm(data, desc="Группировка фрагментов"):
+        name = item.get("name", "")
+        date = item.get("date", None)
+
         for asp in item["aspects"]:
             if asp["sentiment"] == "NEUTRAL":
                 continue
             if asp["confidence"] < 90 or asp["sentiment_confidence"] < 90:
                 continue
             key = f"{asp['category']}|{asp['sentiment']}"
-            category_sentiment_fragments.setdefault(key, []).append(asp["answer"])
+            entry = {
+                "text": asp["answer"],
+                "name": name,
+                "date": date
+            }
+            category_sentiment_fragments.setdefault(key, []).append(entry)
 
     summary_by_group = {}
 
@@ -44,18 +51,17 @@ def summarize_14_clusters(company_id: int):
         else:
             return 10
 
-    for key, fragments in tqdm(category_sentiment_fragments.items(), desc="Обработка категорий"):
-        full_text = " ".join(fragments)
-        sentences = [s.text for s in sentenize(full_text)]
-        sentences = [s for s in sentences if len(s.split()) >= 10]
+    for key, entries in tqdm(category_sentiment_fragments.items(), desc="Обработка категорий"):
+        long_entries = [e for e in entries if len(e["text"].split()) >= 10]
 
-        cluster_n = get_cluster_count(len(sentences))
+        cluster_n = get_cluster_count(len(long_entries))
 
         if not cluster_n:
-            summary_by_group[key] = sentences
+            summary_by_group[key] = long_entries
             continue
 
-        embeddings = model.encode(sentences, convert_to_tensor=True)
+        texts = [e["text"] for e in long_entries]
+        embeddings = model.encode(texts, convert_to_tensor=True)
         kmeans = KMeans(n_clusters=cluster_n, random_state=0).fit(embeddings.cpu().numpy())
         labels = kmeans.labels_
 
@@ -66,7 +72,7 @@ def summarize_14_clusters(company_id: int):
             sim_matrix = cosine_similarity(cluster_embeddings.cpu(), cluster_embeddings.cpu())
             avg_sim = sim_matrix.mean(axis=1)
             best_idx = cluster_idxs[avg_sim.argmax()]
-            summary.append(sentences[best_idx])
+            summary.append(long_entries[best_idx])
 
         summary_by_group[key] = summary
 
@@ -74,3 +80,5 @@ def summarize_14_clusters(company_id: int):
         json.dump(summary_by_group, f, ensure_ascii=False, indent=2)
 
     return output_path.name
+
+
