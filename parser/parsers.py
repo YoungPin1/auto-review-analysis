@@ -141,7 +141,7 @@ class Parser:
         if len(elements) > 1:
             self.__scroll_to_bottom()
             elements = self.driver.find_elements(By.CLASS_NAME, "business-reviews-card-view__review")
-            for elem in elements:
+            for i, elem in enumerate(elements):
                 reviews.append(self.__get_data_item(elem))
         return reviews
 
