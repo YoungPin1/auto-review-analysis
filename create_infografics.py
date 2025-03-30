@@ -215,4 +215,3 @@ def generate_charts(company_id: int):
     plt.close()
 
 
-generate_charts(49543885926)

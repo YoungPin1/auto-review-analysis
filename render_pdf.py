@@ -15,7 +15,6 @@ def render_pdf_from_template(company_id: int, restaurant_name: str = "Назва
     image_path = base_dir / "images" / str(company_id)
     report_path = base_dir / "files" / str(company_id)
 
-
     replacements = {
         "<<SENTIMENT_IMAGE>>": (image_path / "sentiment_donut_chart.png").as_posix(),
         "<<CATEGORY_IMAGE>>": (image_path / "category_donut_chart.png").as_posix(),

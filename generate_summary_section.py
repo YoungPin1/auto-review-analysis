@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from datetime import datetime
 
 
 def escape_latex(s: str) -> str:
@@ -19,7 +20,6 @@ def save_summary_and_examples(company_id: int):
     base_path = Path(f"files/{company_id}")
     base_path.mkdir(parents=True, exist_ok=True)
 
-    # === 1. Генерация summary_section.tex ===
     summary_path = base_path / "14_analysis.json"
     summary_output_path = base_path / "summary_section.tex"
 
@@ -76,7 +76,6 @@ def save_summary_and_examples(company_id: int):
     summary_output_path.write_text("\n".join(lines), encoding="utf-8")
     print(f"✅ Сохранено: {summary_output_path}")
 
-    # === 2. Генерация annotated_examples.tex ===
     input_path = base_path / "filtered_analysis.json"
     output_path = base_path / "annotated_examples.tex"
 
@@ -90,7 +89,6 @@ def save_summary_and_examples(company_id: int):
         return sum(a.get("confidence", 0) for a in aspects) / len(aspects)
 
     filtered_reviews = [r for r in reviews if len(r.get("review_text", "")) > 350]
-
     sorted_reviews = sorted(filtered_reviews, key=avg_confidence, reverse=True)
     top_reviews = sorted_reviews[:50]
 
@@ -107,8 +105,19 @@ def save_summary_and_examples(company_id: int):
 
     for idx, review in enumerate(top_reviews, 1):
         text = escape_latex(review["review_text"].replace("\n", " "))
-        latex_lines.append(rf"\textbf{{Отзыв {idx}.}}  ")
+
+        name = escape_latex(review.get("name", "неизвестно"))
+        stars = review.get("stars", "?")
+        date_val = review.get("date")
+        try:
+            date_str = datetime.fromtimestamp(date_val).strftime("%d.%m.%Y")
+        except Exception:
+            date_str = "неизвестно"
+
+        latex_lines.append(rf"\textbf{{Отзыв {idx}.}}")
+        latex_lines.append(rf"\textit{{Автор: {name}, Оценка: {stars}, Дата: {date_str}}}")
         latex_lines.append(text + "\n")
+
         latex_lines.append(r"\textbf{Аспекты:}")
         latex_lines.append(r"\begin{itemize}")
         for asp in review.get("aspects", []):
@@ -128,4 +137,3 @@ def save_summary_and_examples(company_id: int):
     print(f"✅ Сохранено: {output_path}")
 
     return str(summary_output_path), str(output_path)
-
