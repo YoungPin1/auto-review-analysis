@@ -97,10 +97,8 @@ def save_summary_and_examples(company_id: int):
 
     filtered_reviews = [r for r in reviews if len(r.get("review_text", "")) > 350]
 
-    # sorted_reviews = sorted(filtered_reviews, key=avg_confidence, reverse=True)
-    # top_reviews = sorted_reviews[:50]
-
-    top_reviews = filtered_reviews[:50]
+    sorted_reviews = sorted(filtered_reviews, key=avg_confidence, reverse=True)
+    top_reviews = sorted_reviews[:50]
 
     latex_lines = [
         r"\subsection*{3 Примеры полных отзывов с аннотацией}",
