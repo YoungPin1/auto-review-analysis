@@ -45,14 +45,3 @@ def filter_labeled_reviews(company_id: int,
     with outfile.open("w", encoding="utf-8") as f:
         json.dump(filtered_data, f, ensure_ascii=False, indent=2)
 
-# # _______
-# counter_before = Counter(all_pairs)
-# counter_after = Counter(filtered_pairs)
-#
-# print("\n📊 Статистика по аспектам и сентиментам:")
-# print("{:<30} {:<12} {:<17} {:<17}".format("Категория", "Сентимент", "До фильтрации", "После фильтрации"))
-# print("-" * 80)
-# for (category, sentiment) in sorted(set(counter_before) | set(counter_after)):
-#     before = counter_before.get((category, sentiment), 0)
-#     after = counter_after.get((category, sentiment), 0)
-#     print("{:<30} {:<12} {:<17} {:<17}".format(category, sentiment, before, after))
